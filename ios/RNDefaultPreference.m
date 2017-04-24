@@ -1,26 +1,47 @@
 
 #import "RNDefaultPreference.h"
 
+NSString* defaultSuiteName = nil;
+
 @implementation RNDefaultPreference
 
 - (dispatch_queue_t)methodQueue
 {
     return dispatch_get_main_queue();
 }
+
+- (NSUserDefaults *) getDefaultUser{
+    if(defaultSuiteName == nil){
+        NSLog(@"No prefer suite for userDefaults. Using standard one.");
+        return [NSUserDefaults standardUserDefaults];
+    } else {
+        NSLog(@"Using %@ suite for userDefaults", defaultSuiteName);
+        return [[NSUserDefaults alloc] initWithSuiteName:defaultSuiteName];
+    }
+}
+
 RCT_EXPORT_MODULE()
+
+RCT_EXPORT_METHOD(setDefaultSuite:(NSString *)name
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+    defaultSuiteName = name;
+    resolve([NSNull null]);
+}
 
 RCT_EXPORT_METHOD(get:(NSString *)key
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
-    resolve([[NSUserDefaults standardUserDefaults] stringForKey:key]);
+    resolve([[self getDefaultUser] stringForKey:key]);
 }
 
 RCT_EXPORT_METHOD(set:(NSString *)key value:(NSString *)value
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
-    [[NSUserDefaults standardUserDefaults] setObject:value forKey:key];
+    [[self getDefaultUser] setObject:value forKey:key];
     resolve([NSNull null]);
 }
 
@@ -28,7 +49,7 @@ RCT_EXPORT_METHOD(clear:(NSString *)key
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
-    [[NSUserDefaults standardUserDefaults] removeObjectForKey:key];
+    [[self getDefaultUser] removeObjectForKey:key];
     resolve([NSNull null]);
 }
 
@@ -38,7 +59,7 @@ RCT_EXPORT_METHOD(getMultiple:(NSArray *)keys
 {
     NSMutableArray *result = [NSMutableArray array];
     for(NSString *key in keys) {
-        NSString *value = [[NSUserDefaults standardUserDefaults] stringForKey:key];
+        NSString *value = [[self getDefaultUser] stringForKey:key];
         [result addObject: value == nil ? [NSNull null] : value];
     }
     resolve(result);
@@ -49,7 +70,7 @@ RCT_EXPORT_METHOD(setMultiple:(NSDictionary *)data
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
     for (id key in data) {
-        [[NSUserDefaults standardUserDefaults] setObject:[data objectForKey:key] forKey:key];
+        [[self getDefaultUser] setObject:[data objectForKey:key] forKey:key];
     }
     resolve([NSNull null]);
 }
@@ -59,7 +80,7 @@ RCT_EXPORT_METHOD(clearMultiple:(NSArray *)keys
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
     for(NSString *key in keys) {
-        [[NSUserDefaults standardUserDefaults] removeObjectForKey:key];
+        [[self getDefaultUser] removeObjectForKey:key];
     }
     resolve([NSNull null]);
 }
@@ -67,10 +88,10 @@ RCT_EXPORT_METHOD(clearMultiple:(NSArray *)keys
 RCT_EXPORT_METHOD(getAll:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
-    NSArray *keys = [[[NSUserDefaults standardUserDefaults] dictionaryRepresentation] allKeys];
+    NSArray *keys = [[[self getDefaultUser] dictionaryRepresentation] allKeys];
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     for(NSString *key in keys) {
-        NSString *value = [[NSUserDefaults standardUserDefaults] stringForKey:key];
+        NSString *value = [[self getDefaultUser] stringForKey:key];
         result[key] = value == nil ? [NSNull null] : value;
     }
     resolve(result);
@@ -79,7 +100,7 @@ RCT_EXPORT_METHOD(getAll:(RCTPromiseResolveBlock)resolve
 RCT_EXPORT_METHOD(clearAll:resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
-    NSArray *keys = [[[NSUserDefaults standardUserDefaults] dictionaryRepresentation] allKeys];
+    NSArray *keys = [[[self getDefaultUser] dictionaryRepresentation] allKeys];
     [self clearMultiple:keys resolver:resolve rejecter:reject];
 }
 
